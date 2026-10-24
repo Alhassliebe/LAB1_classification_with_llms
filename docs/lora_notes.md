@@ -42,14 +42,15 @@ Fixed for all runs (no time to tune them, they are the usual QLoRA values):
 |---|---|
 | rank `r` / `lora_alpha` / dropout | 16 / 32 / 0.05 |
 | learning rate, schedule | 2e-4, cosine with 3 % warm-up |
-| batch size, epochs | 4 x 4 gradient accumulation steps (16 sequences per update), 1 |
+| batch size, epochs | 4 x 4 gradient accumulation steps per GPU; our runs used Kaggle's two T4, over which the Trainer splits each batch: 32 sequences per update, 332 updates; 1 epoch |
 | precision | 4-bit NF4 weights; frozen embeddings and `lm_head` in fp16; trained weights (LoRA, `score`) in fp32; fp16 mixed precision |
 | gradient checkpointing | yes |
 | seed | 42 |
 
 We do not use `prepare_model_for_kbit_training`: it casts every non-quantized layer to fp32, including the
 frozen embeddings and `lm_head` (about 545M parameters each in Qwen2.5-7B), which costs 2.2 GB more.
-The model is also kept on a single GPU: in 4-bit it takes about 6 GB.
+The model is loaded on one GPU (about 6 GB in 4-bit); on Kaggle's two T4, the Trainer replicates it and splits
+each batch over both GPUs.
 
 ## Compared on rand-dev (one factor at a time)
 
